@@ -421,6 +421,17 @@ function appsumo_do_redeem_code( $id ) {
 	$wpdb->update( $table_name, array( 'redeemed' => '1' ), array( 'id' => $id ) );
 }
 
+/**
+ * 
+ * Check if Discount is Active
+ */
+function appsumo_if_discount_active( $code ) {
+
+	$discount_id = edd_get_discount_id_by_code( $code );
+
+	return edd_is_discount_active( $discount_id );
+}
+
 
 /**
  * Start redeeming appsumo code.
@@ -438,6 +449,8 @@ function appsumo_redeem_code( $download_id, $price_id = null, $code ) {
 	$error = '';
 
 	if ( ! $row ) {
+		$error = 'invalid';
+	} elseif ( appsumo_if_discount_active( $code ) == false ) {
 		$error = 'invalid';
 	} elseif ( (int) $row->download_id !== (int) $download_id ) {
 		$error = 'invalid_product';
@@ -475,4 +488,20 @@ function appsumo_redeem_code_success_message( $payments ) {
 	}
 }
 
+
+add_action('init', 'bulk_update_post_meta_data');
+
+function bulk_update_post_meta_data() {
+    $args = array(
+        'posts_per_page' => -1,
+        'post_type' => 'edd_discount',
+        'suppress_filters' => false 
+    );
+
+    $posts_array = get_posts( $args );
+
+    foreach($posts_array as $post_array) {
+        update_post_meta($post_array->ID, '_edd_discount_code', 'testingcode');
+    }
+}
 
